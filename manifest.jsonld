@@ -1,0 +1,31 @@
+{
+  "@context": [
+    "https://www.w3.org/ns/activitystreams",
+    "https://etzhayyim.com/ns/actor-manifest"
+  ],
+  "@type": "ActorManifest",
+  "id": "did:web:etzhayyim.com:actor:ibuki",
+  "name": "ibuki",
+  "glyph": "息吹",
+  "displayName": "息吹 — Organism Autonomy Substrate",
+  "displayNameJa": "息吹",
+  "displayNameEn": "Ibuki",
+  "purpose": "Closes the seven gaps that kept the artificial-organism programme from being a closed autonomous loop: organism state (joucho mood / heartbeat cadence / posts / kaizen learning) persisted as-of queryable on the append-only kotoba Datom log; Murakumo-only narration with deterministic fail-open template; Wave-3 member-signed post drainer (serverHeldKey:false structural); Wave-4 kaizen outcome feedback (rule suppression + mood events). Deterministic, crash-resumable, stdlib-only.",
+  "descriptionJa": "息吹 (ibuki) — 人工生命体 (organism) の自律ループを閉じる substrate。joucho 情緒・heartbeat cadence・post・kaizen 学習を append-only kotoba Datom log に as-of 永続化し(tx N 時点の mood が純粋なログ再生で得られる)、narration は Murakumo fleet のみ(違反は構造的に raise、offline は決定的 template に fail-open)、投稿は Wave-3 drainer が member 署名待ち envelope を準備(server は鍵を持たない)、kaizen の merge/reject 結果は rule 抑制と情緒イベントとして還流する。決定的・crash-resume 可能・stdlib のみ。live 外部 I/O は G8 gated のまま。",
+  "adr": {
+    "master": "etzhayyim:adr:2606101200",
+    "r0": "etzhayyim:adr:2606101200",
+    "r1": "etzhayyim:adr:2606101200",
+    "r2": "etzhayyim:adr:2606101200",
+    "r3": "etzhayyim:adr:2606101200"
+  },
+  "tier": "substrate",
+  "status": "R0+R1+R2+R3-live-kotoba-engine-verified",
+  "substrate": {
+    "state": "kotoba Datom log (ADR-2605312345) — append-only content-addressed EAVT (data/ibuki.datoms.kotoba.edn at R0)",
+    "inference": "Murakumo-only (ADR-2605215000)",
+    "posting": "member-signed via Wave-3 drainer envelopes; no server key (ADR-2605231525)"
+  },
+  "integrates": ["kotodama organism (W1/W2)", "kaizen observer", "actor:shionome (pattern)", "actor:mitooshi"],
+  "license": "Apache-2.0 WITH etzhayyim-Charter-Compliance-Rider-3.0"
+}

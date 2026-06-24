@@ -1,0 +1,22 @@
+;; ibuki R0 seed — three :representative UNSPSC organisms (ADR-2606101200).
+;; Bounded, deterministic stand-ins for the 18,342-code fleet (ADR-2605240000); the full
+;; fleet binds at R1 via the kotodama fleet cell. Codes + titles are public UNSPSC taxonomy.
+{:seed/kind :representative
+ :seed/organisms
+ ;; :organism/niche = trophic role in the ecosystem (ADR-2606101200 §生態系):
+ ;; :niche/producer 植物 (primary production) · :niche/router 粘菌 (Physarum relay) ·
+ ;; :niche/decomposer カビ (saprotroph → refined commons metabolite, the citric acid).
+ ;; The 3 seed organisms span all 3 niches to exhibit a complete food web; the
+ ;; 18,342-fleet self-differentiates by hash (ecosystem.niche_of) with no declaration.
+ [{:organism/code "10101500"
+   :organism/title "Live cattle stewardship"
+   :organism/did "did:web:etzhayyim.com:actor:unspsc-10101500"
+   :organism/niche :niche/producer}
+  {:organism/code "14111500"
+   :organism/title "Printing and writing paper commons"
+   :organism/did "did:web:etzhayyim.com:actor:unspsc-14111500"
+   :organism/niche :niche/decomposer}
+  {:organism/code "50221000"
+   :organism/title "Cereal grains provisioning"
+   :organism/did "did:web:etzhayyim.com:actor:unspsc-50221000"
+   :organism/niche :niche/router}]}
