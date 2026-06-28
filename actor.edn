@@ -1,0 +1,8 @@
+{:did        "did:web:etzhayyim.github.io:com-etzhayyim-ibuki"
+ :handle     "ibuki.etzhayyim.com"
+ :ipns-key   "ibuki-actor"
+ :graph-type "com.etzhayyim.ibuki.graph"
+ :published  "2026-06-28"
+ :bundle [["data" "data"]
+          [".well-known/did.json" "did.json"]
+          ["README.md" "README.md"]]}
