@@ -92,7 +92,8 @@
     (is (str/includes? (get t "_note") "accountability"))))
 
 (deftest module-does-no-crypto-present-only
-  (let [src (slurp (io/resource "ibuki/methods/delegation.cljc"))]
+  (let [src (slurp (or (io/resource "ibuki/methods/delegation.cljc")
+                       (io/file "methods/delegation.cljc")))]
     (doseq [needle ["ed25519" "nacl" "cryptography" "hashlib" "MessageDigest"
                     "sha256" "sign(" "private"]]
       (is (not (str/includes? src needle))

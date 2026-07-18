@@ -86,7 +86,7 @@ Run (bb, classpath includes `20-actors` + `20-actors/kotodama/src`):
   allowlist (violation raises before I/O), credential-free, `IBUKI_PERCEPTION_LIVE=1` to
   enable, fail-open to the representative pattern. Per founder direction 2026-06-10 the
   Council gate is exercised as PR merge — `cells/fleet_beat/cell.py` `.solve()` RUNS the
-  beat (registered on joseph/issachar/dan in `50-infra/murakumo/fleet.toml`).
+  beat (registered on joseph/issachar/dan in `50-infra/murakumo/fleet.edn`).
 - **非終末論 append-only** — `:db/add` only; no retraction op exists; re-observation is a new
   datom, never an overwrite.
 - **Closed vocabularies raise, never guess** — joucho event kinds, kaizen outcomes, queue
@@ -169,33 +169,12 @@ Run (bb, classpath includes `20-actors` + `20-actors/kotodama/src`):
 ## Build / test / run autonomously
 
 ```
-./run_tests.sh                                  # all 21 suites (242 tests), hermetic
-# 生態系 food-web report (log-derived: commons metabolites + nutrient delivered to humanity):
-#   cd methods && python3 -c "import ecosystem,datoms;print(ecosystem.web_report(datoms.read_log('<log>')))"
-# 健全性 audit (log-derived; also auto-checkpointed every 10 beats as :health/* datoms):
-#   cd methods && python3 health.py --log <log.edn> [--proposals out/health-proposals.ndjson]
-cd methods && python3 autorun.py --cycles 6 --fresh   # AUTONOMOUS loop → kotoba Datom log
-                                                # prints per-organism mood as-of tx 1 vs head
-cd methods && python3 fleet.py --cycles 9 --shard -1 --batch 2048 --fresh
-                                                # R1: FULL 18,342-organism fleet sweep on one
-                                                # verified chain (~35 s; jacob/joseph/issachar/
-                                                # dan sharding mirrors fleet_cell_main)
-# R2 member-principal live posting (run AS THE MEMBER, never from cron):
-#   IBUKI_MEMBER_HANDLE=… IBUKI_MEMBER_APP_PASSWORD=… [IBUKI_MEMBER_PDS=…] \
-#     python3 member_submit.py --queue ../data/fleet-posts.queue.ndjson \
-#       --receipts ../data/receipts.ndjson --yes
-#   then fold the receipts back: receipts.ingest(receipts_path, log_path)
-# R3 push the local log into the LIVE kotoba engine (default = no-I/O dry-run export):
-#   IBUKI_KOTOBA_LIVE=1 IBUKI_KOTOBA_OPERATOR_DID=<node public did> \
-#     python3 kotoba_bridge.py --log ../data/ibuki-fleet.datoms.kotoba.edn --graph ibuki
-# R3 collect real PR outcomes for the Wave-4 loop (operator-principal, read-only gh):
-#   python3 kaizen_outcomes.py --proposals ../data/kaizen-proposals.ndjson \
-#     --outcomes ../data/kaizen-outcomes.ndjson
+bb test                                        # .cljc suites, hermetic
 ```
 
 Generated artifacts (`data/ibuki*.datoms.kotoba.edn`, `data/*posts.queue.ndjson`) are
 gitignored — the committed seed is `data/seed-organisms.kotoba.edn`; the R1 fleet universe is
-the committed monorepo registry `00-contracts/actor-registry/unispsc.json` (18,342 agents).
+the committed monorepo registry `00-contracts/actor-registry/unspsc.json` (18,342 agents).
 R1 sweep state is durable: `:fleet.shard/cursor` (round-robin) + `:fleet.shard/drain-line`
 (each queue line prepared EXACTLY once) are datoms, so a mid-sweep crash resumes losslessly.
 

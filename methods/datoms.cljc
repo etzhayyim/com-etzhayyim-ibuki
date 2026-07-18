@@ -97,6 +97,21 @@
             [#{} []]
             (datoms-up-to txs up-to-tx)))))
 
+(defn fold-entities
+  "Single-pass: [entity, latest-attr->value-map] for EVERY entity carrying `attr`, in
+  first-occurrence-of-attr order — replaces the O(entities x datoms) pattern of calling
+  fold-entity once per (entities txs attr) result with ONE O(datoms) scan."
+  ([txs attr] (fold-entities txs attr nil))
+  ([txs attr {:keys [up-to-tx]}]
+   (let [[_seen order by-e]
+         (reduce (fn [[seen order by-e] [_op e a v]]
+                   [(if (= a attr) (conj seen e) seen)
+                    (if (and (= a attr) (not (contains? seen e))) (conj order e) order)
+                    (update by-e e (fnil assoc {}) a v)])
+                 [#{} [] {}]
+                 (datoms-up-to txs up-to-tx))]
+     (mapv (fn [e] [e (by-e e)]) order))))
+
 (defn events-for
   "Ordered :joucho.event/kind stream for one organism — the replayable mood history.
   `(joucho/replay-events baseline (events-for …))` answers \"what was the mood at tx N\"."

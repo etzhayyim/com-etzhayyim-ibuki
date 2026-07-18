@@ -1,6 +1,6 @@
 (ns ibuki.methods.test-datoms
   "ibuki 息吹 Datom log tests: chain + as-of fold. ADR-2606101200.
-  Port of methods/test_datoms.py, plus a Python↔Clojure CID-parity test
+  Clojure-native datoms tests (ADR-2606261200; the Python↔Clojure CID-parity test retired with the py source)
   (the ibuki invariant: crash-resume = byte-identical head CID)."
   (:require [clojure.java.io :as io]
             [clojure.string :as str]
@@ -78,36 +78,3 @@
     (is (true? (:ok (d/verify-chain log))))
     (is (str/starts-with? (get (d/fold-entity (d/read-log log) "p") ":post/text")
                           "観測"))))
-
-(deftest python-cid-parity
-  ;; The Python and Clojure implementations write the SAME content-addressed chain:
-  ;; identical head CID over identical (tx-id, as-of, datoms) sequences, and the
-  ;; Clojure side verifies the Python-written log (cross-language commit-DAG).
-  (let [methods-dir (-> (io/resource "ibuki/methods/datoms.py") io/file .getParent)
-        py-log (tmplog)
-        clj-log (tmplog)
-        script (str "import sys, pathlib, datoms\n"
-                    "log = pathlib.Path(sys.argv[1])\n"
-                    "prev = \"\"\n"
-                    "for i in (1, 2, 3):\n"
-                    "    body = [datoms.add(\"e%d\" % i, \":a/n\", i),\n"
-                    "            datoms.add(\"e%d\" % i, \":post/text\","
-                    " \"観測ノート\\n日本語 \\\"quotes\\\"\")]\n"
-                    "    prev = datoms.append_tx(datoms.make_tx(body, tx_id=i,"
-                    " as_of=2606100000 + i, prev_cid=prev), log)\n"
-                    "print(prev, end=\"\")\n")
-        sh (requiring-resolve 'babashka.process/sh)
-        r (sh {:dir methods-dir} "python3" "-c" script py-log)
-        py-head (str/trim (:out r))]
-    (is (zero? (:exit r)) (str "python datoms failed: " (:err r)))
-    (let [clj-head (reduce (fn [prev i]
-                             (let [body [(d/add (str "e" i) ":a/n" i)
-                                         (d/add (str "e" i) ":post/text"
-                                                "観測ノート\n日本語 \"quotes\"")]]
-                               (d/append-tx! (tx body i prev) clj-log)))
-                           "" [1 2 3])]
-      (is (= py-head clj-head))                       ;; byte-identical head CID
-      (is (true? (:ok (d/verify-chain py-log))))      ;; Clojure verifies Python's log
-      (is (= py-head (d/head-cid py-log)))            ;; and reads the same HEAD back
-      (is (= (mapv :tx/datoms (d/read-log py-log))    ;; same parsed datom bodies
-             (mapv :tx/datoms (d/read-log clj-log)))))))

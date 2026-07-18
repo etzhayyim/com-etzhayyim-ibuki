@@ -1,0 +1,8 @@
+;; ibuki — actor manifest (converted from manifest.jsonld, jsonld-retirement wave)
+{:actor/id "ibuki"
+ :actor/glyph "息吹"
+ :actor/display-name "息吹 — Organism Autonomy Substrate"
+ :actor/tier :substrate
+ :actor/status :r0-r1-r2-r3-live-kotoba-engine-verified
+ :actor/purpose "Closes the seven gaps that kept the artificial-organism programme from being a closed autonomous loop: organism state (joucho mood / heartbeat cadence / posts / kaizen learning) persisted as-of queryable on the append-only kotoba Datom log; Murakumo-only narration with deterministic fail-open template; Wave-3 member-signed post drainer (serverHeldKey:false structural); Wave-4 kaizen outcome feedback (rule suppression + mood events). Deterministic, crash-resumable, stdlib-only."
+ :actor/adr "2606101200"}

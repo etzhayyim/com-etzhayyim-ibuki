@@ -35,16 +35,15 @@
   "Fold the `:heartbeat/*` checkpoints for one organism out of the log. The LAST
   checkpoint wins (append-only shadowing) — this is the crash-resume read."
   [txs of]
-  (let [latest (reduce (fn [latest e]
-                         (let [ent (d/fold-entity txs e)]
-                           (if (= of (get ent ":heartbeat/of"))
-                             (let [beat (get ent ":heartbeat/beat" -1)]
-                               (if (or (nil? latest) (> beat (first latest)))
-                                 [beat ent]
-                                 latest))
-                             latest)))
+  (let [latest (reduce (fn [latest [_e ent]]
+                         (if (= of (get ent ":heartbeat/of"))
+                           (let [beat (get ent ":heartbeat/beat" -1)]
+                             (if (or (nil? latest) (> beat (first latest)))
+                               [beat ent]
+                               latest))
+                           latest))
                        nil
-                       (d/entities txs ":heartbeat/of"))]
+                       (d/fold-entities txs ":heartbeat/of"))]
     (if-let [[_beat ent] latest]
       {:last-post-at-ms (get ent ":heartbeat/last-post-at-ms" -1)
        :beats (get ent ":heartbeat/beats" 0)

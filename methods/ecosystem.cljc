@@ -81,14 +81,13 @@
   "Producers fed (a `:event/symbiosis-fed`) within the last SATIATION beats — the router will
   skip them. Log-derived, deterministic. Returns a set of producer codes."
   [txs beat]
-  (reduce (fn [sated e]
-            (let [ev (datoms/fold-entity txs e)]
-              (if (and (= (get ev ":joucho.event/kind") symbiosis-event)
-                       (<= (- beat (get ev ":joucho.event/beat" (- (- satiation) 1))) satiation))
-                (conj sated (get ev ":joucho.event/of"))
-                sated)))
+  (reduce (fn [sated [_e ev]]
+            (if (and (= (get ev ":joucho.event/kind") symbiosis-event)
+                     (<= (- beat (get ev ":joucho.event/beat" (- (- satiation) 1))) satiation))
+              (conj sated (get ev ":joucho.event/of"))
+              sated))
           #{}
-          (datoms/entities txs ":joucho.event/kind")))
+          (datoms/fold-entities txs ":joucho.event/kind")))
 
 (defn trail-strengths
   "Per (producer, decomposer) Physarum trail at `beat`, read off past relay edges and decayed

@@ -2,7 +2,7 @@
   "test-fleet — 息吹 (ibuki) R1 fleet binding: 18,342 organisms on durable checkpoints.
   ADR-2606101200 §R1. Clojure port of `methods/test_fleet.py` (every Python assertion).
 
-  Uses the real committed registry (00-contracts/actor-registry/unispsc.json) for
+  Uses the real committed registry (00-contracts/actor-registry/unspsc.json) for
   universe/partition facts, and a small synthetic registry for sweep mechanics
   (hermetic + fast — fixture sizes match the Python suite exactly)."
   (:require [clojure.string :as str]
@@ -78,10 +78,10 @@
   (is (= 0 (fleet/resolve-shard {:env {}})))
   (is (= 2 (fleet/resolve-shard {:env {"ETZHAYYIM_NODE" "dan"}})))
   (is (= 1 (fleet/resolve-shard {:env {"ETZHAYYIM_NODE" "dan"
-                                       "UNISPSC_ORGANISM_SHARD_INDEX" "1"}})))
+                                       "UNSPSC_ORGANISM_SHARD_INDEX" "1"}})))
   (is (= -1 (fleet/resolve-shard {:env {"ETZHAYYIM_NODE" "dan"
-                                        "UNISPSC_ORGANISM_SHARD_INDEX" "1"
-                                        "UNISPSC_ORGANISM_SHARD_ALL" "1"}}))))
+                                        "UNSPSC_ORGANISM_SHARD_INDEX" "1"
+                                        "UNSPSC_ORGANISM_SHARD_ALL" "1"}}))))
 
 ;; ── sweep mechanics (synthetic registry, hermetic) ────────────────────────
 

@@ -24,10 +24,10 @@
     shard  2  dan       segments 45-60
 
   The code universe is the committed monorepo registry `00-contracts/actor-registry/
-  unispsc.json` (18,342 agents: code / did / title / segment). Resolution order for the
+  unspsc.json` (18,342 agents: code / did / title / segment). Resolution order for the
   path: `IBUKI_UNSPSC_REGISTRY_PATH` env → walk up from the working directory to the
   monorepo root. Shard index resolution mirrors fleet_cell_main:
-  `UNISPSC_ORGANISM_SHARD_ALL=1` → -1, else `UNISPSC_ORGANISM_SHARD_INDEX`, else
+  `UNSPSC_ORGANISM_SHARD_ALL=1` → -1, else `UNSPSC_ORGANISM_SHARD_INDEX`, else
   `ETZHAYYIM_NODE` (joseph/issachar/dan), else 0.
 
   Deterministic (logical beat time; no wall clock). Live deploy of the cron cell stays
@@ -45,7 +45,7 @@
             [ibuki.methods.quorum :as quorum]
             #?(:clj [clojure.java.io :as io])))
 
-(def registry-rel "00-contracts/actor-registry/unispsc.json")
+(def registry-rel "00-contracts/actor-registry/unspsc.json")
 
 ;; shard index → [name segment-lo segment-hi]; ranges mirror kotodama fleet_cell_main
 (def shards
@@ -75,10 +75,12 @@
                                   (System/getProperty "user.dir")
                                   " (set IBUKI_UNSPSC_REGISTRY_PATH)")
                              {:registry-rel registry-rel}))
-             (let [cand (io/file dir registry-rel)]
-               (if (.exists cand)
-                 (.getPath cand)
-                 (recur (.getParentFile dir)))))))))
+             (let [cand (io/file dir registry-rel)
+                   rooted-cand (io/file dir "root" registry-rel)]
+               (cond
+                 (.exists cand) (.getPath cand)
+                 (.exists rooted-cand) (.getPath rooted-cand)
+                 :else (recur (.getParentFile dir)))))))))
 
 #?(:clj
    (defn load-registry
@@ -102,10 +104,10 @@
                   #(get env %)
                   #?(:clj #(System/getenv %) :default (constantly nil)))]
      (cond
-       (= "1" (getenv "UNISPSC_ORGANISM_SHARD_ALL")) -1
-       (some? (getenv "UNISPSC_ORGANISM_SHARD_INDEX"))
-       #?(:clj (Long/parseLong (getenv "UNISPSC_ORGANISM_SHARD_INDEX"))
-          :default (js/parseInt (getenv "UNISPSC_ORGANISM_SHARD_INDEX")))
+       (= "1" (getenv "UNSPSC_ORGANISM_SHARD_ALL")) -1
+       (some? (getenv "UNSPSC_ORGANISM_SHARD_INDEX"))
+       #?(:clj (Long/parseLong (getenv "UNSPSC_ORGANISM_SHARD_INDEX"))
+          :default (js/parseInt (getenv "UNSPSC_ORGANISM_SHARD_INDEX")))
        :else (get node->shard (or (getenv "ETZHAYYIM_NODE") "") 0)))))
 
 (defn shard-agents

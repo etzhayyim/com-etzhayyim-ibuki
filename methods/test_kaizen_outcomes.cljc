@@ -72,7 +72,8 @@
       (is (str/includes? (first lines) "\"merged\"")))))
 
 (deftest module-is-read-only-toward-github
-  (let [src (-> (slurp (io/resource "ibuki/methods/kaizen_outcomes.cljc"))
+  (let [src (-> (slurp (or (io/resource "ibuki/methods/kaizen_outcomes.cljc")
+                           (io/file "methods/kaizen_outcomes.cljc")))
                 (str/replace "'" "\""))]
     (is (str/includes? src "\"view\""))
     (doseq [verb ["merge" "close" "comment" "review" "edit"]]

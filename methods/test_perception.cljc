@@ -88,7 +88,7 @@
 
 (deftest module-reads-no-credentials
   (let [src (slurp (or (io/resource "ibuki/methods/perception.cljc")
-                       (io/file "20-actors/ibuki/methods/perception.cljc")))]
+                       (io/file "methods/perception.cljc")))]
     (doseq [needle ["password" "accessJwt" (str "Authoriza" "tion") "PRIVATE_KEY"]]
       (is (not (str/includes? src needle))
           (str "perception must stay unauthenticated read-only: " needle)))))

@@ -4,7 +4,7 @@
 
   Each test file builds a list of [name fn] and calls (run suite cases). A case passes if it
   returns without raising; failures print and (CLJ host) the process exits non-zero. Mirrors
-  the ake/noroshi convention so `./run_tests.sh` can aggregate every suite.
+  the ake/noroshi convention so `bb test` can aggregate every suite.
 
   NOTE on the Clojure side: the ibuki `.cljc` test suites use `clojure.test`, NOT this
   harness — so nothing requires this namespace. It is ported only for faithful 1:1 parity

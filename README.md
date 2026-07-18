@@ -20,36 +20,34 @@ persistence, every outward edge member-signed and gated.
 | 7. Kaizen one-way | outcomes fold back: rule suppression after repeated rejection + mood events (merge calms, rejection stresses) |
 
 ```bash
-./run_tests.sh                                   # 13 suites, 134 tests, stdlib-only, hermetic
-cd methods && python3 autorun.py --cycles 6 --fresh
-cd methods && python3 fleet.py --cycles 9 --shard -1 --batch 2048 --fresh   # R1 full fleet
+bb test                                         # .cljc suites, hermetic
 ```
 
-**R1 (same wave): the real 18,342-organism fleet on durable checkpoints.** `methods/fleet.py`
-loads the committed registry (`00-contracts/actor-registry/unispsc.json`), shards it exactly
+**R1 (same wave): the real 18,342-organism fleet on durable checkpoints.** `methods/fleet.cljc`
+loads the versioned wire snapshot (`wire/actor-registry/unspsc.json`), shards it exactly
 like the kotodama fleet cell (jacob/joseph/issachar/dan), and sweeps each shard in bounded
 batches behind a durable `:fleet.shard/cursor` — no LRU needed for correctness, mid-sweep
 crash-resume is byte-identical, and a full 18,342-organism sweep lands on one verified chain
 in ~35 s.
 
 **R2 (same wave): code-complete outward paths (Council gate exercised as PR merge).**
-`perception.py` = read-only allowlisted public-XRPC live membrane (follower delta → capped
-joucho events, durable `:perception/*` snapshots, fail-open); `member_submit.py` = the
+`perception.cljc` = read-only allowlisted public-XRPC live membrane (follower delta → capped
+joucho events, durable `:perception/*` snapshots, fail-open); `member_submit.cljc` = the
 MEMBER-principal posting runtime (member's own env credentials, https only, `--yes`
-required, **cron contexts structurally refused**); `receipts.py` folds member-attributed
+required, **cron contexts structurally refused**); `receipts.cljc` folds member-attributed
 `:receipt/*` back onto the log (ibuki never asserts `:published`);
-`cells/fleet_beat/cell.py` `.solve()` runs the durable beat and is registered on
+`cells/fleet_beat/cell.cljc` runs the durable beat and is registered on
 joseph/issachar/dan in `50-infra/murakumo/fleet.toml`. E2E verified: beat → 64 envelopes →
 member-signed → 64 receipts on one verified chain.
 
-**R3 (same wave): the local log lands on the LIVE kotoba engine.** `kotoba_bridge.py`
+**R3 (same wave): the local log lands on the LIVE kotoba engine.** `kotoba_bridge.cljc`
 pushes each local tx as one `datomic.transact` to a running kotoba node (fleet allowlist
 :8077; graph id = `KotobaCid::from_bytes(name)` pinned against the live engine; remote
 commits chained via `expected_parent`; `:ibuki.tx/*` provenance meta; exactly-once
 `:bridge/*` cursor; default no-I/O dry-run; operator auth = unsigned bearer carrying only
 the node's PUBLIC DID — no key held). **Verified live 2026-06-10**: 2 fleet beats → 2
 transacts → `status:ok`, 780 datoms confirmed by the engine, IPNS head advanced, re-push
-sent nothing twice. `kaizen_outcomes.py` fills the Wave-4 outcomes file from real PR
+sent nothing twice. `kaizen_outcomes.cljc` fills the Wave-4 outcomes file from real PR
 states (`gh pr view`, operator-principal, read-only).
 
 ## Embeds the IE-flow system-of-systems substrate (ADR-2606211200)

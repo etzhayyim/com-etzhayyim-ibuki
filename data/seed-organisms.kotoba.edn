@@ -1,22 +1,18 @@
 ;; ibuki R0 seed — three :representative UNSPSC organisms (ADR-2606101200).
 ;; Bounded, deterministic stand-ins for the 18,342-code fleet (ADR-2605240000); the full
 ;; fleet binds at R1 via the kotodama fleet cell. Codes + titles are public UNSPSC taxonomy.
-{:seed/kind :representative
- :seed/organisms
- ;; :organism/niche = trophic role in the ecosystem (ADR-2606101200 §生態系):
- ;; :niche/producer 植物 (primary production) · :niche/router 粘菌 (Physarum relay) ·
- ;; :niche/decomposer カビ (saprotroph → refined commons metabolite, the citric acid).
- ;; The 3 seed organisms span all 3 niches to exhibit a complete food web; the
- ;; 18,342-fleet self-differentiates by hash (ecosystem.niche_of) with no declaration.
- [{:organism/code "10101500"
-   :organism/title "Live cattle stewardship"
-   :organism/did "did:web:etzhayyim.com:actor:unspsc-10101500"
-   :organism/niche :niche/producer}
-  {:organism/code "14111500"
-   :organism/title "Printing and writing paper commons"
-   :organism/did "did:web:etzhayyim.com:actor:unspsc-14111500"
-   :organism/niche :niche/decomposer}
-  {:organism/code "50221000"
-   :organism/title "Cereal grains provisioning"
-   :organism/did "did:web:etzhayyim.com:actor:unspsc-50221000"
-   :organism/niche :niche/router}]}
+;;
+;; datomic/datascript tx-data (edn-datomize, Phase 4): a 1-entity vector with :db/id.
+;; :seed/kind and :seed/organisms are already meaningfully namespaced (idiomatic Clojure)
+;; so neither key is re-prefixed. :seed/kind is a live keyword scalar; :seed/organisms is a
+;; vector-of-maps (non-scalar) so it is pr-str'd into a blob string — parse it back with
+;; `edn/read-string` (methods/autorun.cljc `load-seed` does this transparently for both the
+;; legacy bare-map shape and this tx-data shape). :organism/niche = trophic role in the
+;; ecosystem (ADR-2606101200 §生態系): :niche/producer 植物 (primary production) ·
+;; :niche/router 粘菌 (Physarum relay) · :niche/decomposer カビ (saprotroph → refined
+;; commons metabolite, the citric acid). The 3 seed organisms span all 3 niches to exhibit a
+;; complete food web; the 18,342-fleet self-differentiates by hash (ecosystem.niche_of) with
+;; no declaration.
+[{:db/id -1
+  :seed/kind :representative
+  :seed/organisms "[{:organism/code \"10101500\", :organism/title \"Live cattle stewardship\", :organism/did \"did:web:etzhayyim.com:actor:unspsc-10101500\", :organism/niche :niche/producer} {:organism/code \"14111500\", :organism/title \"Printing and writing paper commons\", :organism/did \"did:web:etzhayyim.com:actor:unspsc-14111500\", :organism/niche :niche/decomposer} {:organism/code \"50221000\", :organism/title \"Cereal grains provisioning\", :organism/did \"did:web:etzhayyim.com:actor:unspsc-50221000\", :organism/niche :niche/router}]"}]

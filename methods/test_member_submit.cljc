@@ -150,7 +150,8 @@
                           (rc/read-receipts p)))))
 
 (deftest no-committed-credentials-in-source
-  (let [src (slurp (io/resource "ibuki/methods/member_submit.cljc"))]
+  (let [src (slurp (or (io/resource "ibuki/methods/member_submit.cljc")
+                       (io/file "methods/member_submit.cljc")))]
     ;; credentials may only ARRIVE via the member's env at runtime — never literals
     (doseq [needle ["Bearer ey" "did:plc:" "xxxx-"]]
       (is (not (str/includes? src needle))

@@ -21,6 +21,8 @@
             [ibuki.methods.datoms :as datoms]
             #?(:clj [clojure.java.io :as io])))
 
+(declare pds-request)   ; forward ref: drain may route envelopes to the own Path B PDS
+
 (def schema-version 1)
 
 (def required-keys
@@ -94,23 +96,29 @@
 #?(:clj
    (defn drain
      "Drain the queue into envelopes + :drain/* datoms (status :prepared — the ONLY status this
-     module can write). Returns {:envelopes :datoms :errors}."
-     [queue-path {:keys [as-of beat]}]
+     module can write). Returns {:envelopes :datoms :errors}. When opts carries a `:pds-base`
+     (+ optional `:leash`), ALSO routes each envelope onto the OWN Path B PDS — returns
+     `:pds-reqs` (one createRecord request per envelope, via pds-request) and records the
+     routing intent on the log as `:drain/pds-target`. Still PURE/dry-run: drain never sends."
+     [queue-path {:keys [as-of beat pds-base] :as opts}]
      (let [[posts errors] (parse-queue queue-path)
            envelopes (mapv envelope posts)
+           own-pds? (not (str/blank? (str pds-base)))
            out (vec (mapcat
                      (fn [i p env]
                        (let [e (str "drain-" beat "-" i)]
-                         [(datoms/add e ":drain/of" (get p "actorDid"))
-                          (datoms/add e ":drain/lexicon" (get env "collection"))
-                          (datoms/add e ":drain/queue-ts" (get p "ts"))
-                          (datoms/add e ":drain/status" ":prepared")
-                          (datoms/add e ":drain/requires-member-sig" true)
-                          (datoms/add e ":drain/server-held-key" false)
-                          (datoms/add e ":drain/beat" beat)
-                          (datoms/add e ":drain/as-of" as-of)]))
+                         (cond-> [(datoms/add e ":drain/of" (get p "actorDid"))
+                                  (datoms/add e ":drain/lexicon" (get env "collection"))
+                                  (datoms/add e ":drain/queue-ts" (get p "ts"))
+                                  (datoms/add e ":drain/status" ":prepared")
+                                  (datoms/add e ":drain/requires-member-sig" true)
+                                  (datoms/add e ":drain/server-held-key" false)
+                                  (datoms/add e ":drain/beat" beat)
+                                  (datoms/add e ":drain/as-of" as-of)]
+                           own-pds? (conj (datoms/add e ":drain/pds-target" pds-base)))))
                      (range) posts envelopes))]
-       {:envelopes envelopes :datoms out :errors errors})))
+       (cond-> {:envelopes envelopes :datoms out :errors errors}
+         own-pds? (assoc :pds-reqs (mapv #(pds-request % opts) envelopes))))))
 
 ;; ── submit (forward to the MEMBER's own signing runtime) ──────────────────
 
@@ -128,3 +136,33 @@
      (throw (member-signature-required
              "operator_ack=True required — outward posting is operator-gated (G8)")))
    (mapv (fn [env] (member-signer env)) envelopes)))
+
+;; ── unify the outward path onto etzhayyim's OWN Path B PDS ─────────────────
+;; Slice 4 (react_loop --live → drainer → 自前 PDS createRecord). Instead of
+;; member CREDENTIALS at a generic AppView (member_submit's bsky.social default),
+;; the envelope becomes a Path B `createRecord` REQUEST for the etzhayyim PDS
+;; (50-infra/etzhayyim-atproto-pds-clj): the PDS signs the record with the ACTOR's
+;; OWN sealed P-256 key and ATTRIBUTES the autonomous write to the consenting member
+;; via the PRESENTED CACAO `leash` (present-only — ibuki never signs, serverHeldKey
+;; stays false, no-server-key). This is PURE — it only composes the request the PDS
+;; client/xrpc consume; it does NOT send (the HTTP send stays operator/member-gated,
+;; G7/G8 — drainer has no network path and reads no credential).
+
+(defn pds-request
+  "Turn a member-sign-ready `envelope` into a Path B createRecord REQUEST for the OWN
+  PDS. opts: {:pds-base <https url, required>  :leash <opaque member CACAO leash, optional>}.
+  Returns {:base <pds-base> :spec {:repo :collection :record (:leash)} :server-held-key false},
+  the exact args the 50-infra `client/create-record! base spec` consumes. Throws if
+  pds-base is blank or the envelope is not a createRecord (closed-vocabulary discipline)."
+  [envelope {:keys [pds-base leash]}]
+  (when (str/blank? (str pds-base))
+    (throw (ex-info "pds-base required (etzhayyim's own PDS host)" {:ibuki/pds-request true})))
+  (when-not (= "com.atproto.repo.createRecord" (get envelope "xrpc"))
+    (throw (ex-info "not a createRecord envelope" {:ibuki/pds-request true
+                                                   :xrpc (get envelope "xrpc")})))
+  {:base pds-base
+   :spec (cond-> {:repo (get envelope "repo")
+                  :collection (get envelope "collection")
+                  :record (get envelope "record")}
+           leash (assoc :leash leash))      ; member CACAO leash, present-only (attribution by consent)
+   :server-held-key false})                 ; the PDS signs with the actor's sealed key, not ibuki

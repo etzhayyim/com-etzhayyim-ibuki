@@ -1,0 +1,34 @@
+{:migration/id :ibuki/standalone-root-integration
+ :migration/date "2026-07-18"
+ :migration/source {:repository "com-junkawasaki/root"
+                    :revision "441987aeccb59d157db65e77ffc20ed833dabcde"
+                    :path "20-actors/ibuki"}
+ :migration/target "etzhayyim/com-etzhayyim-ibuki"
+ :migration/canonical-format :edn
+ :migration/root-only-paths ["bb.edn" "cells/fleet_beat/cell.cljc"
+                             "manifest.edn" "run_tests.clj" "schema.edn"]
+ :migration/removed ["manifest.jsonld"
+                     "cells/fleet_beat/cell.py"
+                     "tools/issue_delegation.py"
+                     "package.json" "nbb.edn" "scripts/*.cljs"
+                     "**/__pycache__/**"]
+ :migration/wire-policy {:json :wire-only
+                         :generated-json :runtime-boundary}
+ :migration/central-assets
+ [{:source "00-contracts/actor-registry/unspsc.json"
+   :snapshot "wire/actor-registry/unspsc.json"
+   :policy :central-authority-with-versioned-wire-snapshot}]
+ :migration/shared-libraries
+ [{:coordinate io.github.kotoba-lang/kotoba
+   :revision "47a83883ce0ca91d6cda978c8fd03f38192c3887"}]
+ :migration/compatibility-snapshots
+ [{:source "20-actors/kotodama/src/kotoba/datom.cljc"
+   :target "src/kotoba/datom.cljc"
+   :gap :extract-and-publish-shared-kotoba-datom-library}]
+ :migration/deprecated-languages {:go :pruned :tinygo :pruned
+                                  :found []
+                                  :stale-python-ports :pruned}
+ :migration/root-drain
+ {:remove ["20-actors/ibuki"]
+  :update ["scripts/tasks.edn"
+           "70-tools/src/etzhayyim/lint/shell-baseline.edn"]}}

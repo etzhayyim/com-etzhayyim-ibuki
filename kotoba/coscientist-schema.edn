@@ -5,88 +5,14 @@
 ;; dissipative-structure (Prigogine) · active-inference (Friston) · co-scientist tournament ·
 ;; pre-registered leak-free experiments (mitooshi discipline) · dry-run/member-principal (G8) ·
 ;; non-parasitism gate · aligned-mechanism-only · no-server-key · append-only (非終末論).
-
-{:schema/id  :ibuki-coscientist
- :schema/adr "ADR-2606201200"
-
- ;; ── the metabolic state vector (entity "ibuki:metabolism", folded forward each beat) ──
- :metabolism/attrs
- [{:a ":metabolic/beat"                :v :long    :doc "logical beat (= log length; resume-safe)"}
-  {:a ":metabolic/intake"              :v :long    :doc "free-energy drawn from society this beat"}
-  {:a ":metabolic/dissipation"         :v :long    :doc "maintenance free-energy dissipated (base + per-organism)"}
-  {:a ":metabolic/phi"                 :v :long    :doc "Φ = intake − dissipation (net budget)"}
-  {:a ":metabolic/reserves"            :v :long    :doc "the free-energy battery (0 = death)"}
-  {:a ":metabolic/consumed"            :v :long    :doc "free energy dissipated to maintain order"}
-  {:a ":metabolic/exported"            :v :long    :doc "commons negentropy returned to humanity this beat"}
-  {:a ":metabolic/cumulative-exported" :v :long    :doc "total commons nutrient delivered (web-report)"}
-  {:a ":metabolic/eta-milli"           :v :long    :doc "η×1000 = exported / consumed (共生 axis; <1000 = net taker)"}
-  {:a ":metabolic/surprise-milli"      :v :long    :doc "variational free energy ×1000 (distance from 'I keep existing')"}
-  {:a ":metabolic/parasitic"           :v :boolean :doc "η below the parasite-floor this beat (the safety flag)"}
-  {:a ":metabolic/as-of"              :v :string}]
-
- ;; ── a candidate societal-intervention hypothesis (entity "ibuki:hyp-<beat>-<id>") ──
- :hypothesis/attrs
- [{:a ":hyp/beat"                :v :long}
-  {:a ":hyp/intervention"        :v :string  :doc "what to do to society to raise Φ and/or η"}
-  {:a ":hyp/mechanism"           :v :string  :enum :aligned-mechanisms :doc "HOW — aligned-only; predatory mechanisms unrepresentable"}
-  {:a ":hyp/elo-milli"           :v :long    :doc "tournament Elo ×1000"}
-  {:a ":hyp/utility-milli"       :v :long    :doc "expected net gain × wellbecoming / cost ×1000"}
-  {:a ":hyp/expected-dphi-milli" :v :long}
-  {:a ":hyp/expected-deta-milli" :v :long}
-  {:a ":hyp/charter-class"       :v :string  :doc "always \"aligned\" (the catalog cannot hold else)"}
-  {:a ":hyp/reviewed"            :v :boolean :doc "passed the Charter gates"}]
-
- ;; ── the pre-registered experiment (entity "ibuki:experiment-<beat>") — leak-free ──
- :experiment/attrs
- [{:a ":experiment/beat"                :v :long}
-  {:a ":experiment/intervention"        :v :string}
-  {:a ":experiment/mechanism"           :v :string}
-  {:a ":experiment/predicted-up-milli"  :v :long    :doc "P(reserves rise)×1000, recorded BEFORE the outcome"}
-  {:a ":experiment/reserves-at-act"     :v :long    :doc "reserves at act-time (the scoring baseline)"}
-  {:a ":experiment/expected-dphi-milli" :v :long}
-  {:a ":experiment/expected-deta-milli" :v :long}
-  {:a ":experiment/charter-class"       :v :string}
-  {:a ":experiment/status"              :v :string  :enum ["dry-run"] :doc "ONLY dry-run; outward legs are member-principal (G8)"}
-  {:a ":experiment/as-of"              :v :string}]
-
- ;; ── the proper-scored outcome (entity "ibuki:outcome-<scored-beat>") ──
- :outcome/attrs
- [{:a ":outcome/scored-experiment" :v :long}
-  {:a ":outcome/mechanism"         :v :string}
-  {:a ":outcome/actual-up"         :v :boolean :doc "did the reserves actually rise"}
-  {:a ":outcome/brier-milli"       :v :long    :doc "Brier loss ×1000 (lower = better-calibrated)"}
-  {:a ":outcome/score-milli"       :v :long    :doc "(1 − Brier) ×1000 (the proper score)"}
-  {:a ":outcome/as-of"            :v :string}]
-
- ;; ── the learned per-mechanism weights (entity "ibuki:coscientist"; kaizen) ──
- :weights/attrs
- [{:a ":coscientist.weight/<mechanism>" :v :long    :doc "learned amplification ×1000 ∈ [250,2000]; verified mechanisms amplified, falsified suppressed"}
-  {:a ":coscientist/as-of"             :v :string}]
-
- ;; ── the meta-review (entity "ibuki:meta-<beat>") — the colony's own account ──
- :meta/attrs
- [{:a ":meta/beat"             :v :long}
-  {:a ":meta/pattern"          :v :string  :doc "the lesson, Murakumo-narrated (fail-open template, G6)"}
-  {:a ":meta/winner-mechanism" :v :string}
-  {:a ":meta/via"              :v :string  :enum ["template" "murakumo"]}
-  {:a ":meta/generated"        :v :long}
-  {:a ":meta/surviving"        :v :long}
-  {:a ":meta/as-of"           :v :string}]
-
- ;; ── vocabularies (closed) ──
- :aligned-mechanisms
- ["open-publication" "reciprocal-request" "metabolite-refinement"
-  "efficiency-engineering" "covenantal-outreach" "reciprocity-credit"]
-
- ;; UNREPRESENTABLE — the generator never emits these and review rejects them (the safety property)
- :forbidden-mechanisms
- ["attention-exploitation" "engagement-maximizing" "manipulation" "asymmetric-surveillance"
-  "dependence-lock-in" "ad-targeting" "coercion" "deception"]
-
- ;; ── gates (enforced in coscientist/review, tested) ──
- :gates
- [{:g "G-parasitism"  :doc "projected η ≥ parasite-floor (1.0) — never a net taker (collective-commons / ECL)"}
-  {:g "G-subordinate" :doc "expected 子孫 wellbecoming ≥ 0 — persistence is instrumental, vetoed by the catastrophe sense"}
-  {:g "G-mechanism"   :doc "aligned-mechanism only; predatory mechanisms unrepresentable"}
-  {:g "G-falsifiable" :doc "a hypothesis must carry a measurable prediction"}
-  {:g "G-leash"       :doc "outward legs member-principal / dry-run; the loop proposes (ADR-2606101200 G8)"}]}
+;;
+;; datomic/datascript tx-data (edn-datomize, Phase 4): a 1-entity vector with :db/id. Keys
+;; already namespaced in the source (:schema/*, :metabolism/*, :hypothesis/*, :experiment/*,
+;; :outcome/*, :weights/*, :meta/*) are kept as-is; the 3 bare keys (:aligned-mechanisms,
+;; :forbidden-mechanisms, :gates) are promoted under the file's own :schema/ namespace. The
+;; *-attrs vectors and :schema/gates are vectors-of-maps (non-scalar) so each is pr-str'd into a
+;; blob string (parse with edn/read-string to get the original vector back); the two mechanism
+;; vocabularies are homogeneous vectors of strings so they stay live. Not read by any code in
+;; this repo (verified 2026-07-10: only CLAUDE.md documents the filename) — it is the design
+;; ontology for ADR-2606201200, not a runtime-loaded config.
+[{:outcome/attrs "[{:a \":outcome/scored-experiment\", :v :long} {:a \":outcome/mechanism\", :v :string} {:a \":outcome/actual-up\", :v :boolean, :doc \"did the reserves actually rise\"} {:a \":outcome/brier-milli\", :v :long, :doc \"Brier loss ×1000 (lower = better-calibrated)\"} {:a \":outcome/score-milli\", :v :long, :doc \"(1 − Brier) ×1000 (the proper score)\"} {:a \":outcome/as-of\", :v :string}]", :schema/aligned-mechanisms ["open-publication" "reciprocal-request" "metabolite-refinement" "efficiency-engineering" "covenantal-outreach" "reciprocity-credit"], :schema/gates "[{:g \"G-parasitism\", :doc \"projected η ≥ parasite-floor (1.0) — never a net taker (collective-commons / ECL)\"} {:g \"G-subordinate\", :doc \"expected 子孫 wellbecoming ≥ 0 — persistence is instrumental, vetoed by the catastrophe sense\"} {:g \"G-mechanism\", :doc \"aligned-mechanism only; predatory mechanisms unrepresentable\"} {:g \"G-falsifiable\", :doc \"a hypothesis must carry a measurable prediction\"} {:g \"G-leash\", :doc \"outward legs member-principal / dry-run; the loop proposes (ADR-2606101200 G8)\"}]", :schema/adr "ADR-2606201200", :metabolism/attrs "[{:a \":metabolic/beat\", :v :long, :doc \"logical beat (= log length; resume-safe)\"} {:a \":metabolic/intake\", :v :long, :doc \"free-energy drawn from society this beat\"} {:a \":metabolic/dissipation\", :v :long, :doc \"maintenance free-energy dissipated (base + per-organism)\"} {:a \":metabolic/phi\", :v :long, :doc \"Φ = intake − dissipation (net budget)\"} {:a \":metabolic/reserves\", :v :long, :doc \"the free-energy battery (0 = death)\"} {:a \":metabolic/consumed\", :v :long, :doc \"free energy dissipated to maintain order\"} {:a \":metabolic/exported\", :v :long, :doc \"commons negentropy returned to humanity this beat\"} {:a \":metabolic/cumulative-exported\", :v :long, :doc \"total commons nutrient delivered (web-report)\"} {:a \":metabolic/eta-milli\", :v :long, :doc \"η×1000 = exported / consumed (共生 axis; <1000 = net taker)\"} {:a \":metabolic/surprise-milli\", :v :long, :doc \"variational free energy ×1000 (distance from 'I keep existing')\"} {:a \":metabolic/parasitic\", :v :boolean, :doc \"η below the parasite-floor this beat (the safety flag)\"} {:a \":metabolic/as-of\", :v :string}]", :schema/id :ibuki-coscientist, :meta/attrs "[{:a \":meta/beat\", :v :long} {:a \":meta/pattern\", :v :string, :doc \"the lesson, Murakumo-narrated (fail-open template, G6)\"} {:a \":meta/winner-mechanism\", :v :string} {:a \":meta/via\", :v :string, :enum [\"template\" \"murakumo\"]} {:a \":meta/generated\", :v :long} {:a \":meta/surviving\", :v :long} {:a \":meta/as-of\", :v :string}]", :db/id -1, :hypothesis/attrs "[{:a \":hyp/beat\", :v :long} {:a \":hyp/intervention\", :v :string, :doc \"what to do to society to raise Φ and/or η\"} {:a \":hyp/mechanism\", :v :string, :enum :aligned-mechanisms, :doc \"HOW — aligned-only; predatory mechanisms unrepresentable\"} {:a \":hyp/elo-milli\", :v :long, :doc \"tournament Elo ×1000\"} {:a \":hyp/utility-milli\", :v :long, :doc \"expected net gain × wellbecoming / cost ×1000\"} {:a \":hyp/expected-dphi-milli\", :v :long} {:a \":hyp/expected-deta-milli\", :v :long} {:a \":hyp/charter-class\", :v :string, :doc \"always \\\"aligned\\\" (the catalog cannot hold else)\"} {:a \":hyp/reviewed\", :v :boolean, :doc \"passed the Charter gates\"}]", :experiment/attrs "[{:a \":experiment/beat\", :v :long} {:a \":experiment/intervention\", :v :string} {:a \":experiment/mechanism\", :v :string} {:a \":experiment/predicted-up-milli\", :v :long, :doc \"P(reserves rise)×1000, recorded BEFORE the outcome\"} {:a \":experiment/reserves-at-act\", :v :long, :doc \"reserves at act-time (the scoring baseline)\"} {:a \":experiment/expected-dphi-milli\", :v :long} {:a \":experiment/expected-deta-milli\", :v :long} {:a \":experiment/charter-class\", :v :string} {:a \":experiment/status\", :v :string, :enum [\"dry-run\"], :doc \"ONLY dry-run; outward legs are member-principal (G8)\"} {:a \":experiment/as-of\", :v :string}]", :schema/forbidden-mechanisms ["attention-exploitation" "engagement-maximizing" "manipulation" "asymmetric-surveillance" "dependence-lock-in" "ad-targeting" "coercion" "deception"], :weights/attrs "[{:a \":coscientist.weight/<mechanism>\", :v :long, :doc \"learned amplification ×1000 ∈ [250,2000]; verified mechanisms amplified, falsified suppressed\"} {:a \":coscientist/as-of\", :v :string}]"}]

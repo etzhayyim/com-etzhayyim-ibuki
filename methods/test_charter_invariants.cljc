@@ -36,7 +36,9 @@
   "name → source text for every ported (non-test) .cljc in ibuki/methods."
   []
   (into {} (map (fn [n]
-                  [n (slurp (io/resource (str "ibuki/methods/" n ".cljc")))]))
+                  [n (slurp (or (io/resource (str "ibuki/methods/" n ".cljc"))
+                                (io/file (str "methods/" n ".cljc"))
+                                (io/file (str "20-actors/ibuki/methods/" n ".cljc"))))]))
         source-names))
 
 (defn- tmpdir []

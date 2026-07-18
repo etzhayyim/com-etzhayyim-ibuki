@@ -106,7 +106,8 @@
       (is (= (:available pool) (:offered pool))))))
 
 (deftest module-holds-no-key
-  (let [src (slurp (io/resource "ibuki/methods/symbiosis.cljc"))]
+  (let [src (slurp (or (io/resource "ibuki/methods/symbiosis.cljc")
+                       (io/file "methods/symbiosis.cljc")))]
     (doseq [needle ["password" "accessJwt" "Authorization" "urllib" "PRIVATE_KEY"]]
       (is (not (str/includes? src needle))
           (str "symbiosis must stay key-free + offline: " needle)))))

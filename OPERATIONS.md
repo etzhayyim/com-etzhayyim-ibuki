@@ -4,26 +4,24 @@ ADR-2606101200 / 2606101800. This is the honest operational picture: what runs *
 what is **member/operator-gated** (Tier-1, never the platform's act), and what is a **physical
 operator deploy** outside any agent's reach.
 
-## What runs live RIGHT NOW (operator-authorised, agent-runnable)
+## Standalone runtime status
+
+The former Python operator entrypoints have been retired. Canonical actor logic is CLJC and
+configuration/state is EDN. Invoke the hermetic suite with `./run_tests.sh`; live operator I/O
+must be wired by an external member/operator host that calls the CLJC boundaries below.
+
+## Operator-authorised boundaries
 
 These flags do real I/O against the operator's own loopback/fleet + read-only public endpoints.
 None of them holds a member credential or a platform signing key.
 
 | flag | effect | substrate |
 |---|---|---|
-| `IBUKI_PERCEPTION_LIVE=1` | read-only public-AppView observation (follower delta → joucho events) | `perception.py`, allowlist `public.api.bsky.app`, GET only, no credential |
-| `IBUKI_MURAKUMO_LIVE=1` | colony / organism narration via the Murakumo fleet | `infer.py`, allowlist loopback :4000 / EVO-X2; **fail-open to template** if the gateway is down |
-| `IBUKI_KOTOBA_LIVE=1` + `IBUKI_KOTOBA_OPERATOR_DID=<node public did>` | persist the local Datom log to the LIVE kotoba engine | `kotoba_bridge.py`, per-tx `datomic.transact` to :8077, unsigned public-DID operator bearer (loopback trust boundary), exactly-once `:bridge/*` cursor |
+| `IBUKI_PERCEPTION_LIVE=1` | read-only public-AppView observation | `methods/perception.cljc` |
+| `IBUKI_MURAKUMO_LIVE=1` | Murakumo narration, fail-open to template | `methods/infer.cljc` |
+| `IBUKI_KOTOBA_LIVE=1` + operator DID | persist Datom transactions | `methods/kotoba_bridge.cljc` |
 
-```bash
-cd 20-actors/ibuki/methods
-export IBUKI_PERCEPTION_LIVE=1 IBUKI_MURAKUMO_LIVE=1 \
-       IBUKI_KOTOBA_LIVE=1 IBUKI_KOTOBA_OPERATOR_DID="$(security find-generic-password -s etzhayyim.kotoba -a agent-did -w)"
-python3 -c "import autorun,kotoba_bridge,pathlib; \
-  L=pathlib.Path('/var/lib/etzhayyim/ibuki/ibuki.datoms.kotoba.edn'); \
-  autorun.autorun(12, fresh=False, log_path=L, queue_path=L.with_name('q.ndjson')); \
-  print(kotoba_bridge.push(L, graph='ibuki-prod', live=True))"
-```
+The actor repository deliberately contains no member key or autonomous live-I/O launcher.
 
 ### Live-run verification — 2026-06-10 (this session)
 
@@ -57,7 +55,7 @@ not fabricate. They are run BY the member/operator, not by ibuki or any agent:
 ## What is a physical operator deploy (outside any agent — ADR-2606071000)
 
 - **continuous fleet operation**: `cells/fleet_beat/cell.py` `.solve()` runs the durable beat
-  and is registered on joseph/issachar/dan in `50-infra/murakumo/fleet.toml` (cron 3/33/43).
+  and is registered on joseph/issachar/dan in `50-infra/murakumo/fleet.edn` (cron 3/33/43).
   Turning it into a running k3s DaemonSet via the Ansible playbook on the physical Mac-mini
   fleet is the operator's hardware step — one human action away.
 
