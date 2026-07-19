@@ -25,9 +25,8 @@
       (or `:live true`), default is a DRY-RUN export that returns the exact
       request bodies without any I/O.
 
-  HTTP is an INJECTABLE fn (`*http-post*` dynamic var or the `:http-post` option
-  key, the `infer.cljc` pattern) defaulting to a babashka/JVM implementation
-  (`babashka.http-client`, loaded via `requiring-resolve`). Deterministic (the
+  HTTP is an explicit INJECTABLE fn (`*http-post*` dynamic var or the `:http-post`
+  option key). Live mode without a host capability fails closed. Deterministic (the
   dry-run export of the same log is byte-identical)."
   (:require [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
@@ -196,33 +195,10 @@
 ;; throws (the server's reason surfaced — e.g. a CACAO-verification message on
 ;; the delegated path — so a delegation issuer can see WHY it was rejected).
 
-#?(:clj
-   (defn default-http-post
-     "babashka/JVM HTTP edge: POST `body-map` as application/json with `headers`
-     and parse the JSON response (keyword keys). `babashka.http-client` +
-     `cheshire` are loaded lazily via requiring-resolve (both built into bb)."
-     [url body-map headers timeout-s]
-     (let [post (requiring-resolve 'babashka.http-client/post)
-           generate (requiring-resolve 'cheshire.core/generate-string)
-           parse (requiring-resolve 'cheshire.core/parse-string)
-           resp (post (str url)
-                      {:headers headers
-                       :body (generate body-map)
-                       :timeout (long (* 1000 (double timeout-s)))
-                       :throw false})
-           status (:status resp)]
-       (if (<= 200 status 299)
-         (parse (:body resp) true)
-         (let [body (str (:body resp))]
-           (throw (ex-info (str "kotoba transact HTTP " status ": "
-                                (subs body 0 (min 200 (count body))))
-                           {:ibuki/kotoba-transact-http-error true
-                            :status status})))))))
-
 (def ^:dynamic *http-post*
   "The injectable HTTP fn (see contract above). Rebind, or pass `:http-post`
   in the options map, to stub the engine in tests / other hosts."
-  #?(:clj default-http-post :default nil))
+  nil)
 
 #?(:clj
    (defn default-transport
@@ -234,11 +210,15 @@
      ([url body {:keys [timeout-s operator-auth http-post operator-did]
                  :or {timeout-s 60.0 operator-auth true}}]
       (assert-kotoba url)
+      (let [http-post (or http-post *http-post*)]
+        (when-not (fn? http-post)
+          (throw (ex-info "live Kotoba push requires an explicit http-post capability"
+                          {:ibuki/capability :kotoba-http-post})))
       (let [headers (cond-> {"Content-Type" "application/json"}
                       operator-auth
                       (assoc "Authorization"
                              (str "Bearer " (operator-bearer {:operator-did operator-did}))))]
-        ((or http-post *http-post*) url body headers timeout-s)))))
+        (http-post url body headers timeout-s))))))
 
 ;; ── the durable push cursor ───────────────────────────────────────────────
 

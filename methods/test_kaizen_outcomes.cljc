@@ -72,10 +72,20 @@
       (is (str/includes? (first lines) "\"merged\"")))))
 
 (deftest module-is-read-only-toward-github
-  (let [src (-> (slurp (or (io/resource "ibuki/methods/kaizen_outcomes.cljc")
-                           (io/file "methods/kaizen_outcomes.cljc")))
+  (let [portable (slurp (or (io/resource "ibuki/methods/kaizen_outcomes.cljc")
+                            (io/file "methods/kaizen_outcomes.cljc")))
+        host (slurp (or (io/resource "ibuki/methods/host_capabilities.clj")
+                        (io/file "methods/host_capabilities.clj")))
+        src (-> (str portable "\n" host)
                 (str/replace "'" "\""))]
     (is (str/includes? src "\"view\""))
     (doseq [verb ["merge" "close" "comment" "review" "edit"]]
       (is (not (str/includes? src (str "\"" verb "\"")))
           (str "kaizen-outcomes must stay read-only: gh pr " verb)))))
+
+(deftest missing-gh-capability-fails-closed
+  (let [p (proposals-file (tmpdir)
+                          [{"proposalId" "p1" "rule" "r" "pr" 1}])]
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"explicit read-only gh capability"
+                          (ko/collect p)))))

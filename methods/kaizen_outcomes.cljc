@@ -18,10 +18,11 @@
   Mapping (closed): MERGED → merged · CLOSED → rejected · OPEN → pending.
 
   The gh runner is INJECTABLE (`*gh*` dynamic var or the `:gh` option key) for hermetic
-  tests, defaulting to shelling out via `babashka.process` (loaded lazily via
-  requiring-resolve — the infer.cljc pattern). Environment reads go through the injectable
+  tests; production invocation receives a read-only gh capability from its host.
+  Environment reads go through the injectable
   `*env*` edge (nil → the real process env; a map → the test env)."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.kaizen-feedback :as kf]
             #?(:clj [clojure.java.io :as io])))
 
@@ -62,27 +63,10 @@
 ;;
 ;; Contract: (gh pr-number) → the PR state string ("MERGED" | "CLOSED" | "OPEN").
 
-#?(:clj
-   (defn default-gh
-     "`gh pr view <n> --json state` with the OPERATOR's own gh auth. Read-only —
-     the ONLY gh subcommand this namespace can run."
-     [pr]
-     (let [process (requiring-resolve 'babashka.process/process)
-           parse (requiring-resolve 'cheshire.core/parse-string)
-           p (process ["gh" "pr" "view" (str pr) "--json" "state"]
-                      {:out :string :err :string})
-           res (deref p 30000 ::timeout)]
-       (when (= ::timeout res)
-         (throw (ex-info (str "gh pr view " pr " timed out after 30s") {:pr pr})))
-       (when-not (zero? (:exit res))
-         (throw (ex-info (str "gh pr view " pr " failed: " (str/trim (str (:err res))))
-                         {:pr pr :exit (:exit res)})))
-       (get (parse (:out res)) "state"))))
-
 (def ^:dynamic *gh*
   "The injectable gh runner (see contract above). Rebind, or pass `:gh` in the
   options map, to stub gh in tests — no network/gh in tests."
-  #?(:clj default-gh :default nil))
+  nil)
 
 ;; ── collect outcomes (closed vocab, never guessed) ────────────────────────
 
@@ -96,6 +80,9 @@
      ([proposals-path {:keys [gh]}]
       (refuse-if-cron)
       (let [run (or gh *gh*)]
+        (when-not (fn? run)
+          (throw (operator-context-required
+                  "outcome collection requires an explicit read-only gh capability")))
         (into []
               (keep (fn [p]
                       (let [pr (:pr p)]
@@ -125,7 +112,7 @@
      file is a SNAPSHOT of current PR states; the as-of history lives on the Datom log
      via kaizen-feedback/feedback-datoms, not in this file). Returns the record count."
      [outcome-records path]
-     (let [generate (requiring-resolve 'cheshire.core/generate-string)
+     (let [generate json/generate-string
            f (io/file (str path))]
        (when-let [parent (.getParentFile f)]
          (.mkdirs parent))

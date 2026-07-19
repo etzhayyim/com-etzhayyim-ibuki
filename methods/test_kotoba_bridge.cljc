@@ -99,6 +99,12 @@
         r2 (kb/push (make-log (tmpdir)) {:live false})]
     (is (= (:bodies r1) (:bodies r2)))))
 
+(deftest live-default-transport-without-http-capability-fails-closed
+  (let [log (make-log (tmpdir) 1)]
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo
+                          #"explicit http-post capability"
+                          (kb/push log {:live true})))))
+
 ;; ── exactly-once durable cursor ───────────────────────────────────────────
 
 (deftest live-push-advances-durable-cursor-exactly-once
