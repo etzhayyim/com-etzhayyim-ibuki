@@ -49,6 +49,11 @@
     (is (= {:followers 12} snap))
     (is (= [":event/idle" ":event/follower-gained" ":event/follower-gained"] events))))
 
+(deftest live-observation-without-fetch-capability-fails-closed
+  (is (thrown-with-msg? clojure.lang.ExceptionInfo #"explicit fetch capability"
+                        (perception/events-for-beat
+                         1 {:actor "did:web:x" :live true}))))
+
 (deftest live-follower-spike-is-capped
   (let [fake (fn [_url] {"followersCount" 10000})
         [events _snap] (perception/events-for-beat

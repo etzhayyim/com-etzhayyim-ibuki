@@ -16,10 +16,8 @@
       unreachable from here.
 
   Live-call failure falls back to the template (fail-open: the organism keeps
-  living offline). HTTP is an INJECTABLE fn (`*http-post*` dynamic var or the
-  `:http-post` option key) defaulting to a babashka/JVM implementation
-  (`babashka.http-client`, built into bb; loaded via `requiring-resolve` so
-  this namespace loads anywhere, incl. hosts without the dep)."
+  living offline). HTTP is an explicit INJECTABLE fn (`*http-post*` dynamic var
+  or the `:http-post` option key); live mode without it fails closed."
   (:require [clojure.string :as str]))
 
 ;; ADR-2605215000: the Murakumo fleet endpoints — LiteLLM gateway (loopback),
@@ -92,25 +90,10 @@
 ;; response parsed to a Clojure map with KEYWORD keys (so the completion lives
 ;; at [:choices 0 :message :content]). ANY throw is treated as fail-open.
 
-#?(:clj
-   (defn default-http-post
-     "babashka/JVM HTTP edge: POST `body-map` as application/json and parse the
-     JSON response (keyword keys). `babashka.http-client` + `cheshire` are
-     loaded lazily via requiring-resolve (both built into bb)."
-     [endpoint body-map timeout-s]
-     (let [post (requiring-resolve 'babashka.http-client/post)
-           generate (requiring-resolve 'cheshire.core/generate-string)
-           parse (requiring-resolve 'cheshire.core/parse-string)
-           resp (post (str endpoint)
-                      {:headers {"Content-Type" "application/json"}
-                       :body (generate body-map)
-                       :timeout (long (* 1000 (double timeout-s)))})]
-       (parse (:body resp) true))))
-
 (def ^:dynamic *http-post*
   "The injectable HTTP fn (see contract above). Rebind, or pass `:http-post`
   in the options map, to stub the gateway in tests / other hosts."
-  #?(:clj default-http-post :default nil))
+  nil)
 
 (defn- env-live?
   "The IBUKI_MURAKUMO_LIVE=1 gate, read from the real process env."
@@ -161,11 +144,15 @@
    (assert-murakumo endpoint)
    (if-not (live? opts)
      {:text (template-narrate title code mood source-kind) :via "template"}
-     (let [prompt (str "You are the UNSPSC organism '" title "' (" code "), mood=" mood
+     (let [http (or http-post *http-post*)
+           _ (when-not (fn? http)
+               (throw (ex-info "live inference requires an explicit http-post capability"
+                               {:ibuki/capability :murakumo-http-post})))
+           prompt (str "You are the UNSPSC organism '" title "' (" code "), mood=" mood
                        ". Write ONE short observational social post (<200 chars) about your "
                        source-kind " observation. Mirror tone: describe, never advise, "
                        "never trade-signal.")
-           text (try-live (or http-post *http-post*)
+           text (try-live http
                           endpoint model prompt 120 timeout-s)]
        (if text
          {:text text :via "murakumo"}
@@ -189,7 +176,11 @@
    (assert-murakumo endpoint)
    (if-not (live? opts)
      {:text fallback :via "template"}
-     (if-let [text (try-live (or http-post *http-post*)
+     (let [http (or http-post *http-post*)
+           _ (when-not (fn? http)
+               (throw (ex-info "live inference requires an explicit http-post capability"
+                               {:ibuki/capability :murakumo-http-post})))]
+       (if-let [text (try-live http
                              endpoint model prompt 200 timeout-s)]
-       {:text text :via "murakumo"}
-       {:text fallback :via "template"}))))
+         {:text text :via "murakumo"}
+         {:text fallback :via "template"})))))

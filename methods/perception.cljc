@@ -20,9 +20,8 @@
   runtime act). Offline beats emit NO perception datoms, so offline head CIDs are unchanged
   from R1 — determinism tests stay byte-identical.
 
-  HTTP is an INJECTABLE fn (`*http-get*` dynamic var or the `:fetch` option key,
-  the ibuki.methods.infer pattern) defaulting to a babashka/JVM implementation
-  (`babashka.http-client` via requiring-resolve); the default fetch enforces the
+  HTTP is an explicit INJECTABLE fn (`*http-get*` dynamic var or the `:fetch` option key);
+  the host fetch provider enforces the
   allowlist BEFORE any I/O. No credential is ever read here: public endpoints only,
   the platform signs nothing (G7)."
   (:require [clojure.string :as str]
@@ -85,25 +84,10 @@
 ;; STRING keys (Python json.loads parity — `followersCount` is wire schema,
 ;; not kebab-cased). ANY throw is treated as fail-open by `events-for-beat`.
 
-#?(:clj
-   (defn default-http-get
-     "GET an allowlisted public XRPC endpoint and parse JSON (string keys). The
-     ONLY I/O in this module — read-only, unauthenticated, allowlist-guarded.
-     `babashka.http-client` + `cheshire` are loaded lazily via requiring-resolve."
-     ([url] (default-http-get url 5.0))
-     ([url timeout-s]
-      (assert-allowed url)
-      (let [get* (requiring-resolve 'babashka.http-client/get)
-            parse (requiring-resolve 'cheshire.core/parse-string)
-            resp (get* (str url)
-                       {:headers {"Accept" "application/json"}
-                        :timeout (long (* 1000 (double timeout-s)))})]
-        (parse (:body resp))))))
-
 (def ^:dynamic *http-get*
   "The injectable read-only fetch fn (see contract above). Rebind, or pass
   `:fetch` in the options map, to stub the AppView in hermetic tests."
-  #?(:clj default-http-get :default nil))
+  nil)
 
 (defn- url-quote
   "Python `urllib.parse.quote(s, safe='')` parity: percent-encode everything
@@ -126,7 +110,11 @@
   ([actor prev-followers {:keys [fetch]}]
    (let [url (str "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile"
                   "?actor=" (url-quote actor))
-         profile ((or fetch *http-get*) url)
+         fetch (or fetch *http-get*)
+         _ (when-not (fn? fetch)
+             (throw (ex-info "live perception requires an explicit fetch capability"
+                             {:ibuki/capability :perception-fetch})))
+         profile (fetch url)
          followers (long (get profile "followersCount" 0))
          gained (if (and (some? prev-followers) (> followers prev-followers))
                   (min (- followers prev-followers) follower-event-cap)
@@ -160,7 +148,8 @@
          (let [obs (observe actor prev-followers {:fetch fetch})]
            [(:events obs) {:followers (:followers obs)}])
          (catch #?(:clj Exception :cljs :default) e
-           (if (perception-boundary-violation? e)
+           (if (or (perception-boundary-violation? e)
+                   (= :perception-fetch (:ibuki/capability (ex-data e))))
              (throw e)   ;; a boundary violation is a bug, never silently absorbed
              [(representative-events beat) nil])))))))
 

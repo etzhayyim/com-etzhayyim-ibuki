@@ -23,12 +23,12 @@
   Per the founder direction of 2026-06-10 the Council gate is exercised as PR review+merge:
   this code path is complete to the end; *running* it remains a member's explicit act.
 
-  HTTP is an INJECTABLE transport (`*transport*` dynamic var or the `:transport` option
-  key) defaulting to a babashka/JVM implementation (`babashka.http-client` + `cheshire`,
-  loaded lazily via requiring-resolve — the infer.cljc pattern). Environment reads go
+  HTTP is an explicit INJECTABLE transport (`*transport*` dynamic var or the `:transport`
+  option key); the portable namespace has no ambient network authority. Environment reads go
   through the injectable `*env*` edge (nil → the real process env; a map → the test env),
   so the refusal paths are exercisable exactly as the Python tests exercise os.environ."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.drainer :as drainer]
             #?(:clj [clojure.java.io :as io])))
 
@@ -52,42 +52,36 @@
     (get *env* k)
     #?(:clj (System/getenv ^String k) :default nil)))
 
-;; ── default https transport (injectable — infer.cljc *http-post* pattern) ──
+;; ── explicit https transport ──────────────────────────────────────────────
 ;;
 ;; Contract: (transport url body headers) → the PDS's JSON response parsed to a
 ;; Clojure map with STRING keys (wire shape). body nil → GET, else POST.
 
+(defn- assert-pds-url [url]
+  (when-not (str/starts-with? (str url) "https://")
+    (throw (drainer/member-signature-required
+            (str "member PDS must be https, got " (pr-str url))))))
+
 (defn http-json
-  "POST (or GET when body is nil) JSON over https. The default transport; tests
-  inject a fake. A non-https URL is refused before any I/O — the member's PDS
-  must be https."
-  ([url] (http-json url nil nil 20.0))
-  ([url body] (http-json url body nil 20.0))
-  ([url body headers] (http-json url body headers 20.0))
-  ([url body headers timeout-s]
-   (when-not (str/starts-with? (str url) "https://")
-     (throw (drainer/member-signature-required
-             (str "member PDS must be https, got " (pr-str url)))))
-   #?(:clj
-      (let [post (requiring-resolve 'babashka.http-client/post)
-            get* (requiring-resolve 'babashka.http-client/get)
-            generate (requiring-resolve 'cheshire.core/generate-string)
-            parse (requiring-resolve 'cheshire.core/parse-string)
-            opts {:headers (merge {"Content-Type" "application/json"} headers)
-                  :timeout (long (* 1000 (double timeout-s)))}
-            resp (if (nil? body)
-                   (get* (str url) opts)
-                   (post (str url) (assoc opts :body (generate body))))]
-        (parse (:body resp)))
-      :default
-      (throw (ex-info "no default transport on this host — inject :transport"
-                      {:url (str url)})))))
+  "Compatibility guard retained for callers: validates the PDS boundary, then
+  fails closed because host I/O must be supplied as an explicit transport."
+  ([url] (http-json url nil nil))
+  ([url body] (http-json url body nil))
+  ([url _body _headers]
+   (assert-pds-url url)
+   (throw (drainer/member-signature-required
+           "member PDS access requires an explicit transport capability"))))
+
+(defn- require-transport [transport]
+  (when-not (fn? transport)
+    (throw (drainer/member-signature-required
+            "member PDS access requires an explicit transport capability")))
+  transport)
 
 (def ^:dynamic *transport*
   "The injectable PDS transport (see contract above). Rebind, or pass `:transport`
   in the options map, to stub the member's PDS in tests / other hosts."
-  #?(:clj (fn [url body headers] (http-json url body headers 20.0))
-     :default nil))
+  nil)
 
 ;; ── the G7 structural refusals ────────────────────────────────────────────
 
@@ -117,7 +111,8 @@
                (str "no member credentials in env (" env-handle " / " env-app-password ") — the "
                     "platform holds no key; the member supplies their own session at runtime"))))
      (let [pds (str/replace (or (env-get env-pds) default-pds) #"/+$" "")
-           t (or transport *transport*)
+           _ (assert-pds-url pds)
+           t (require-transport (or transport *transport*))
            out (t (str pds "/xrpc/com.atproto.server.createSession")
                   {"identifier" handle "password" password}
                   nil)]
@@ -132,7 +127,7 @@
   Options: :transport."
   ([session] (member-signer session {}))
   ([session {:keys [transport]}]
-   (let [t (or transport *transport*)]
+   (let [t (require-transport (or transport *transport*))]
      (fn sign [envelope]
        (let [out (t (str (get session "pds") "/xrpc/com.atproto.repo.createRecord")
                     {"repo" (get session "did")
@@ -181,7 +176,7 @@
      rebuilt from the receipt-file-keys whitelist — credentials are unrepresentable in this
      file by construction. Returns the receipt count."
      [receipts path]
-     (let [generate (requiring-resolve 'cheshire.core/generate-string)
+     (let [generate json/generate-string
            f (io/file (str path))]
        (when-let [parent (.getParentFile f)]
          (.mkdirs parent))

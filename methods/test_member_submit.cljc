@@ -78,6 +78,11 @@
   (is (thrown-with-msg? clojure.lang.ExceptionInfo #"https"
                         (ms/http-json "http://pds.example.com/xrpc/x" {}))))
 
+(deftest member-session-without-transport-capability-fails-closed
+  (binding [ms/*env* member-env]
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"explicit transport capability"
+                          (ms/create-member-session)))))
+
 (deftest submit-without-ack-refused
   (binding [ms/*env* member-env]
     (let [q (queue-file (tmpdir))]

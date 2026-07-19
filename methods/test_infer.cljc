@@ -59,15 +59,10 @@
                   {:live true
                    :endpoint "https://api.openai.com/v1/chat/completions"})))
 
-(deftest narrate-live-fails-open-to-template
-  ;; Live gate set but (normally) no Murakumo gateway listening: the organism
-  ;; must keep living offline (fail-open), not crash.
-  (let [out (infer/narrate "t" "c" "calm" "recordAnalysis"
-                           {:live true
-                            :endpoint "http://127.0.0.1:4000/v1/chat/completions"
-                            :timeout-s 0.2})]
-    (is (contains? #{"template" "murakumo"} (:via out))) ;; murakumo only if a real fleet is up
-    (is (seq (:text out)))))
+(deftest narrate-live-without-capability-fails-closed
+  (is (thrown-with-msg? clojure.lang.ExceptionInfo #"explicit http-post capability"
+                        (infer/narrate "t" "c" "calm" "recordAnalysis"
+                                       {:live true}))))
 
 ;; ── the injectable HTTP-fn contract (Clojure-specific, no live gateway) ───
 
@@ -96,10 +91,9 @@
   (murakumo-thrown?
    (infer/infer-text "p" "fb" {:live true
                                :endpoint "https://api.openai.com/v1/chat/completions"}))
-  ;; live + no gateway → fail-open
-  (let [out (infer/infer-text "p" "fb" {:live true :timeout-s 0.2})]
-    (is (contains? #{"template" "murakumo"} (:via out)))
-    (is (seq (:text out))))
+  ;; live authority must be explicit
+  (is (thrown-with-msg? clojure.lang.ExceptionInfo #"explicit http-post capability"
+                        (infer/infer-text "p" "fb" {:live true})))
   ;; stubbed live path → murakumo
   (let [stub (fn [_ body _]
                (is (= 200 (:max_tokens body)))
