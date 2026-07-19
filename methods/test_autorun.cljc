@@ -1,7 +1,8 @@
 (ns ibuki.methods.test-autorun
   "test-autorun — 息吹 (ibuki) autonomous heartbeat loop. ADR-2606101200.
   Clojure port of `methods/test_autorun.py`."
-  (:require [clojure.set :as set]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.set :as set]
             [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [ibuki.methods.autorun :as autorun]
@@ -53,7 +54,7 @@
 
 (deftest queue-lines-match-adr-2605240100-schema
   (let [[_ _ q] (run-life (tmpdir) 2 true)
-        parse (requiring-resolve 'cheshire.core/parse-string)
+        parse json/parse-string
         lines (->> (str/split-lines (slurp q))
                    (remove str/blank?)
                    (mapv parse))]

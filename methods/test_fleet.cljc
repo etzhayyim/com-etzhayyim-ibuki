@@ -5,7 +5,8 @@
   Uses the real committed registry (00-contracts/actor-registry/unspsc.json) for
   universe/partition facts, and a small synthetic registry for sweep mechanics
   (hermetic + fast — fixture sizes match the Python suite exactly)."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [ibuki.methods.datoms :as datoms]
             [ibuki.methods.ecosystem :as ecosystem]
@@ -24,7 +25,7 @@
   ([dr] (synthetic-registry dr 10))
   ([dr n] (synthetic-registry dr n 10))
   ([dr n segment]
-   (let [generate (requiring-resolve 'cheshire.core/generate-string)
+   (let [generate json/generate-string
          agents (mapv (fn [i]
                         (let [code (format "%d%06d" segment i)]
                           {"code" code "handle" (str "c" code)
