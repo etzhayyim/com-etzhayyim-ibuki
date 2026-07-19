@@ -1,7 +1,8 @@
 (ns ibuki.methods.test-kotoba-bridge
   "ibuki 息吹 — R3 bridge to the live kotoba engine. ADR-2606101200 §R3.
   Port of methods/test_kotoba_bridge.py (every Python assertion, 1:1)."
-  (:require [clojure.edn :as edn]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.edn :as edn]
             [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [ibuki.methods.datoms :as d]
@@ -162,7 +163,7 @@
     (let [payload-b64 (second (str/split tok #"\."))
           padded (str payload-b64
                       (apply str (repeat (mod (- 4 (mod (count payload-b64) 4)) 4) "=")))
-          payload ((requiring-resolve 'cheshire.core/parse-string)
+          payload (json/parse-string
                    (String. (.decode (java.util.Base64/getUrlDecoder) ^String padded)
                             "UTF-8"))]
       (is (= {"sub" "did:key:zexample"} payload)))))   ;; the public DID, nothing else

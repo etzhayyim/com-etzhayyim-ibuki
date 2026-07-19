@@ -1,7 +1,8 @@
 (ns ibuki.methods.test-kaizen-feedback
   "ibuki 息吹 — Wave-4 kaizen feedback loop. ADR-2606101200.
   Port of methods/test_kaizen_feedback.py (every Python assertion, 1:1)."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [clojure.test :refer [deftest is]]
             [ibuki.methods.kaizen-feedback :as kf]))
 
@@ -10,7 +11,7 @@
      "Write `rows` as one temp NDJSON file; returns its path (tempdir parity
      with the Python tests' tempfile.TemporaryDirectory)."
      [rows]
-     (let [gen (requiring-resolve 'cheshire.core/generate-string)
+     (let [gen json/generate-string
            f (java.io.File/createTempFile "ibuki-kf" ".ndjson")]
        (.deleteOnExit f)
        (spit f (str (str/join "\n" (map gen rows)) "\n"))
