@@ -17,7 +17,8 @@
 
   Drained envelopes are checkpointed to the kotoba log as :drain/* datoms with status
   :prepared — :published is NOT writable by ibuki. Stdlib only. Deterministic. Portable .cljc."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
             #?(:clj [clojure.java.io :as io])))
 
@@ -49,7 +50,7 @@
      (let [f (io/file (str queue-path))]
        (if-not (.exists f)
          [[] []]
-         (let [parse (requiring-resolve 'cheshire.core/parse-string)]
+         (let [parse json/parse-string]
            (loop [lines (str/split-lines (slurp f)) i 0 posts [] errors []]
              (if (empty? lines)
                [posts errors]

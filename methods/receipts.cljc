@@ -13,7 +13,8 @@
 
   Closed vocab: a receipt status other than \"submitted-by-member\" throws (this module
   records member submissions, nothing else). Stdlib only. Deterministic. Portable .cljc."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
             #?(:clj [clojure.java.io :as io])))
 
@@ -32,7 +33,7 @@
      (let [f (io/file (str path))]
        (if-not (.exists f)
          []
-         (let [parse (requiring-resolve 'cheshire.core/parse-string)]
+         (let [parse json/parse-string]
            (into []
                  (keep (fn [[i raw]]
                          (let [line (str/trim raw)]

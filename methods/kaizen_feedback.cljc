@@ -29,7 +29,8 @@
   acceptance literally calms the colony. Deterministic. Human review stays the
   decision-maker (ADR-2605240200: auto-apply is rejected; the loop closes
   through people, the LEARNING closes through the log)."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             #?(:clj [clojure.java.io :as io])))
 
 (def suppress-after 3)   ;; consecutive rejections before a rule is suppressed
@@ -53,7 +54,7 @@
      (let [f (io/file (str path))]
        (if-not (.exists f)
          []
-         (let [parse (requiring-resolve 'cheshire.core/parse-string)]
+         (let [parse json/parse-string]
            (->> (str/split-lines (slurp f))
                 (map str/trim)
                 (remove str/blank?)

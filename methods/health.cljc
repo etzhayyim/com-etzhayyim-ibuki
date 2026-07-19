@@ -16,7 +16,8 @@
   / niche-imbalance). Pathologies become KaizenProposal lines; `:health/*` checkpoint datoms put
   the verdict on the log (as-of queryable). No per-organism wellbeing SCORE (edge-primary).
   Deterministic. Append-only."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
             [ibuki.methods.joucho :as joucho]
             #?(:clj [clojure.java.io :as io])))
@@ -257,7 +258,7 @@
      kaizen_feedback/read-proposals consumes). Snapshot semantics (overwrite): current
      pathologies only; the as-of history lives on the log via health-datoms. Returns the count."
      [report path]
-     (let [generate (requiring-resolve 'cheshire.core/generate-string)
+     (let [generate json/generate-string
            f (io/file (str path))]
        (when-let [p (.getParentFile f)] (.mkdirs p))
        (spit f (str/join (map (fn [fnd]

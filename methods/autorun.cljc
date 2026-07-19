@@ -17,7 +17,8 @@
   Deterministic: logical time only (beat index × beat-ms); same seed + same cycle count →
   same head CID. Live external I/O stays G8-gated — this loop's only side effects are the
   LOCAL log + the LOCAL queue file."
-  (:require [clojure.edn :as edn]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.edn :as edn]
             [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
             [ibuki.methods.digest :as digest]
@@ -88,7 +89,7 @@
    (defn- queue-line!
      "Append one ADR-2605240100 v=1 line to the post queue (deterministic logical ts)."
      [queue-path did code title mood text ts-ms]
-     (let [generate (requiring-resolve 'cheshire.core/generate-string)
+     (let [generate json/generate-string
            created (format "2026-06-10T00:00:00.%03dZ" (mod ts-ms 1000))
            line (into (sorted-map)
                       {"v" drainer/schema-version "ts" ts-ms "actorDid" did "code" code

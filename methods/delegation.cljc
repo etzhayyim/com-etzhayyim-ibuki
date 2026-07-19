@@ -40,7 +40,8 @@
   wall clock inside any method — the live push boundary supplies it). Present-only: this
   namespace contains NO signature primitive of any kind. Portable .cljc."
   (:refer-clojure :exclude [load])
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             #?(:clj [clojure.java.io :as io])))
 
 (def capability
@@ -68,7 +69,7 @@
      [path]
      (let [f (io/file (str path))]
        (when (.exists f)
-         (let [parse (requiring-resolve 'cheshire.core/parse-string)
+         (let [parse json/parse-string
                bundle (parse (slurp f))
                missing (vec (remove #(contains? bundle %) required-keys))]
            (when (seq missing)
