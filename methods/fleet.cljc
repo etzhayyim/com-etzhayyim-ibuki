@@ -32,7 +32,8 @@
 
   Deterministic (logical beat time; no wall clock). Live deploy of the cron cell stays
   G8-gated."
-  (:require [clojure.string :as str]
+  (:require #?(:clj [cheshire.core :as json])
+            [clojure.string :as str]
             [ibuki.methods.datoms :as datoms]
             [ibuki.methods.digest :as digest]
             [ibuki.methods.drainer :as drainer]
@@ -87,7 +88,7 @@
      "The fleet's code universe: [{:code :did :title :segment} …] in registry order."
      ([] (load-registry nil))
      ([path]
-      (let [parse (requiring-resolve 'cheshire.core/parse-string)
+      (let [parse json/parse-string
             p (or path (resolve-registry-path))
             doc (parse (slurp (io/file (str p))))]
         (mapv (fn [a]
@@ -211,7 +212,7 @@
    (defn queue-line!
      "One ADR-2605240100 v=1 queue line (deterministic logical ts)."
      [queue-path did code title mood text ts-ms]
-     (let [generate (requiring-resolve 'cheshire.core/generate-string)
+     (let [generate json/generate-string
            line (into (sorted-map)
                       {"v" drainer/schema-version "ts" ts-ms "actorDid" did "code" code
                        "title" title "mood" mood "contentSourceKind" "recordAnalysis"
@@ -230,7 +231,7 @@
      (let [f (io/file (str queue-path))]
        (if-not (.exists f)
          [[] from-line]
-         (let [parse (requiring-resolve 'cheshire.core/parse-string)
+         (let [parse json/parse-string
                lines (str/split-lines (slurp f))
                [out _prepared]
                (reduce
